@@ -286,19 +286,18 @@ static void amdgpu_dma_buf_detach(struct dma_buf *dmabuf,
  */
 static int amdgpu_dma_buf_pin(struct dma_buf_attachment *attach)
 {
-	struct dma_buf dmabuf = attach->dmabuf;
+	struct dma_buf *dmabuf = attach->dmabuf;
 	struct amdgpu_bo *bo = gem_to_amdgpu_bo(dmabuf->priv);
 	u32 domains = bo->preferred_domains;
-        struct dma_buf_attachment *others;
 
-        dma_resv_assert_held(dmabuf->resv);
+	dma_resv_assert_held(dmabuf->resv);
 
 	/*
 	 * Try pinning into VRAM to allow P2P with RDMA NICs without ODP
 	 * support if all attachments can do P2P. If any attachment can't do
 	 * P2P just pin into GTT instead.
 	 */
-        list_for_each_entry(attach, &dmabuf->attachments, node)
+	list_for_each_entry(attach, &dmabuf->attachments, node)
 		if (!attach->peer2peer)
 			domains &= ~AMDGPU_GEM_DOMAIN_VRAM;
 
@@ -364,9 +363,6 @@ static struct sg_table *amdgpu_dma_buf_map(struct dma_buf_attachment *attach,
 		r = ttm_bo_validate(&bo->tbo, &bo->placement, &ctx);
 		if (r)
 			return ERR_PTR(r);
-
-	} else if (bo->tbo.resource->mem_type != TTM_PL_TT) {
-		return ERR_PTR(-EBUSY);
 	}
 #else
 	r = amdgpu_bo_pin(bo, AMDGPU_GEM_DOMAIN_GTT);
